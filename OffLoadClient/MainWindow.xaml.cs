@@ -2,8 +2,6 @@
 using OffLoad.Core;
 using OffLoad.Core.Services;
 using System;
-using System.IO;
-using System.Net;
 using System.Windows;
 using System.Windows.Forms;
 
@@ -29,39 +27,24 @@ namespace OffLoadClient
 
         private void Download(object sender, RoutedEventArgs e)
         {
-            bool downloaded = false;
             using (new CursorWait())
             {
                 System.Windows.Forms.Application.UseWaitCursor = true;
                 MusicDownloadService MDS = new MusicDownloadService();
                 string url = VideoURL.Text;
-                bool experimentalTitle = ExperimentalCheckBox.IsChecked ?? false;
                 string path = string.IsNullOrWhiteSpace(Path.Text) ? "music" : Path.Text;
                 if (url.Contains("www.youtube.com/playlist"))
                 {
-                    string response = new WebClient().DownloadString(new Uri(url));
-                    foreach (int i in response.AllIndexesOf("data-video-id=\""))
-                    {
-                        downloaded = MDS.Download($"https://www.youtube.com/watch?v={response.Substring(i + 15, 11)}", experimentalTitle, path);
-                    }
+                    MDS.DownloadPlaylistAsync(url, path);
                 }
                 else if (url.Contains("www."))
                 {
-                    downloaded = MDS.Download(url, experimentalTitle, path);
+                    MDS.DownloadAsync(url, path);
                 }
                 else
                 {
-                    System.Windows.MessageBox.Show("You've input the wrong URL", "Download successfull!", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+                    System.Windows.MessageBox.Show("You've input the wrong URL", "Download unsuccessfull!", MessageBoxButton.OK, MessageBoxImage.Exclamation);
                 }
-            }
-
-            if (downloaded)
-            {
-                System.Windows.MessageBox.Show("The file was downloaded successfully!", "Download successfull!", MessageBoxButton.OK, MessageBoxImage.Exclamation);
-            }
-            else
-            {
-                System.Windows.MessageBox.Show("I encountered an exception when downloading.", "Exception encoutered.", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 

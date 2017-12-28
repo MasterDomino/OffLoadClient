@@ -1,7 +1,11 @@
 ﻿using OffLoad.Core.Services.Interfaces;
 using System;
-using System.Diagnostics;
 using System.IO;
+using System.Linq;
+using System.Windows;
+using YoutubeExplode;
+using YoutubeExplode.Models;
+using YoutubeExplode.Models.MediaStreams;
 
 namespace OffLoad.Core.Services
 {
@@ -9,7 +13,7 @@ namespace OffLoad.Core.Services
     {
         #region Methods
 
-        public bool Download(string url, bool specialTitleProcessing, string path)
+        public async void DownloadAsync(string url, string path)
         {
             try
             {
@@ -17,45 +21,86 @@ namespace OffLoad.Core.Services
                 {
                     Directory.CreateDirectory(path);
                 }
-                string fileName = Extensions.GetWebsiteTitle(url);
-                if (specialTitleProcessing)
+                if (YoutubeClient.TryParseVideoId(url, out string videoId))
                 {
-                    fileName = Extensions.GetWebsiteTitleSpecial(url);
+                    YoutubeClient client = new YoutubeClient();
+                    Video video = await client.GetVideoAsync(videoId).ConfigureAwait(false);
+
+                    if (File.Exists($"{path}\\{video.Title}.m4a") || video == null)
+                    {
+                        return;
+                    }
+
+                    MediaStreamInfoSet streamInfoSet = await client.GetVideoMediaStreamInfosAsync(videoId).ConfigureAwait(false);
+                    MediaStreamInfo streamInfo = streamInfoSet?.Audio.Where(a => a.Container == Container.M4A).WithHighestBitrate();
+                    if (streamInfo != null)
+                    {
+                        await client.DownloadMediaStreamAsync(streamInfo, $"{path}\\{video.Title}.m4a").ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        MessageBox.Show("I encountered an exception when downloading.", "Exception encoutered.", MessageBoxButton.OK, MessageBoxImage.Error);
+                        return;
+                    }
+                    MessageBox.Show("The file was downloaded successfully!", "Download successfull!", MessageBoxButton.OK, MessageBoxImage.Exclamation);
                 }
-                if (File.Exists($"{path}\\{fileName}.m4a"))
+                else
                 {
-                    return true;
+                    Logger.Warn($"[Wrong VideoId]VideoId: {url}");
+                    MessageBox.Show("The url you've used is wrong!", "Download unsuccessfull!", MessageBoxButton.OK, MessageBoxImage.Exclamation);
                 }
-
-                Logger.Debug("Stream download started.", "MDM");
-                Stopwatch watch = new Stopwatch();
-                watch.Start();
-
-                // download and wait until process finishes
-                YoutubeDL(url, path);
-
-                watch.Stop();
-                Logger.Debug($"Stream download finished, elapsed time: {watch.ElapsedMilliseconds}ms", "MDM");
-                return true;
             }
             catch (Exception ex)
             {
                 Logger.Error(ex);
-                return false;
+                MessageBox.Show($"I encountered an exception when downloading. {ex}", "Exception encoutered.", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
-        private void YoutubeDL(string url, string path)
+        public async void DownloadPlaylistAsync(string url, string path)
         {
-            ProcessStartInfo youtubeDL = new ProcessStartInfo
+            try
             {
-                FileName = "youtube-dl",
-                Arguments = $"-f \"bestaudio[ext=m4a]\" -o \"{path}\\%(title)s.%(ext)s\" {url} -q --no-warnings",
-                UseShellExecute = false,
-                WindowStyle = ProcessWindowStyle.Hidden,
-                CreateNoWindow = true
-            };
-            Process.Start(youtubeDL).WaitForExit();
+                if (!Directory.Exists(path))
+                {
+                    Directory.CreateDirectory(path);
+                }
+                if (YoutubeClient.TryParsePlaylistId(url, out string playlistId))
+                {
+                    YoutubeClient client = new YoutubeClient();
+                    Playlist playlist = await client.GetPlaylistAsync(playlistId).ConfigureAwait(false);
+
+                    foreach (Video video in playlist.Videos)
+                    {
+                        if (File.Exists($"{path}\\{video.Title}.m4a") || playlist == null)
+                        {
+                            return;
+                        }
+
+                        MediaStreamInfoSet streamInfoSet = await client.GetVideoMediaStreamInfosAsync(video.Id).ConfigureAwait(false);
+                        MediaStreamInfo streamInfo = streamInfoSet?.Audio.Where(a => a.Container == Container.M4A).WithHighestBitrate();
+                        if (streamInfo != null)
+                        {
+                            await client.DownloadMediaStreamAsync(streamInfo, $"{path}\\{video.Title}.m4a").ConfigureAwait(false);
+                            MessageBox.Show("The file was downloaded successfully!", "Download successfull!", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+                        }
+                        else
+                        {
+                            MessageBox.Show("I encountered an exception when downloading.", "Exception encoutered.", MessageBoxButton.OK, MessageBoxImage.Error);
+                        }
+                    }
+                }
+                else
+                {
+                    Logger.Warn($"[Wrong VideoId]VideoId: {url}");
+                    MessageBox.Show("The url you've used is wrong!", "Download unsuccessfull!", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex);
+                MessageBox.Show($"I encountered an exception when downloading. {ex}", "Exception encoutered.", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         #endregion

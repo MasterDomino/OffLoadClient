@@ -4,7 +4,9 @@
     {
         #region Methods
 
-        bool Download(string url, bool specialTitleProcessing, string path);
+        void DownloadAsync(string url, string path);
+
+        void DownloadPlaylistAsync(string url, string path);
 
         #endregion
     }
