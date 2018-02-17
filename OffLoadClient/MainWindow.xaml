@@ -5,12 +5,12 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:OffLoadClient"
         mc:Ignorable="d"
-        Title="OffLoadClient" Height="151" Width="525" ResizeMode="NoResize">
+        Title="OffLoadClient" Height="146" Width="525" ResizeMode="NoResize">
     <Grid>
-        <Label Content="Video URL" Margin="10,0,0,91" Height="26" VerticalAlignment="Bottom" HorizontalAlignment="Left" Width="65"/>
-        <TextBox Name="VideoURL" Margin="10,0,10,68" TextWrapping="Wrap" Height="23" VerticalAlignment="Bottom"/>
-        <Button Content="Download" Margin="432,0,10,15" Click="Download" Height="20" VerticalAlignment="Bottom"/>
-        <TextBox x:Name="Path" Margin="10,0,39,40" TextWrapping="Wrap" Height="23" VerticalAlignment="Bottom"/>
-        <Button Name="PathButton" Content="..." HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Margin="0,0,10,40" Height="23" VerticalAlignment="Bottom" HorizontalAlignment="Right" Width="24" Click="PathButton_Click"/>
+        <Label Content="Video URL" Margin="10,0,0,86" Height="26" VerticalAlignment="Bottom" HorizontalAlignment="Left" Width="65"/>
+        <TextBox Name="URLBox" Margin="10,0,10,63" TextWrapping="NoWrap" Height="23" VerticalAlignment="Bottom"/>
+        <Button Content="Download" Margin="432,0,10,10" Click="Download" Height="20" VerticalAlignment="Bottom"/>
+        <TextBox x:Name="Path" Margin="10,0,39,35" TextWrapping="NoWrap" Height="23" VerticalAlignment="Bottom"/>
+        <Button Name="PathButton" Content="..." HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Margin="0,0,10,35" Height="23" VerticalAlignment="Bottom" HorizontalAlignment="Right" Width="24" Click="PathButton_Click" RenderTransformOrigin="0.625,0.913"/>
     </Grid>
 </Window>

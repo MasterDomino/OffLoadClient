@@ -1,7 +1,9 @@
 ﻿using OffLoad.Core.Services.Interfaces;
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
 using YoutubeExplode;
 using YoutubeExplode.Models;
@@ -15,91 +17,73 @@ namespace OffLoad.Core.Services
 
         public async void DownloadAsync(string url, string path)
         {
-            try
+            if (YoutubeClient.TryParseVideoId(url, out string videoId))
             {
-                if (!Directory.Exists(path))
+                YoutubeClient client = new YoutubeClient();
+                Video video = await client.GetVideoAsync(videoId).ConfigureAwait(false);
+                bool task = await DownloadItemAsync(path, video, client).ConfigureAwait(false);
+                if (task)
                 {
-                    Directory.CreateDirectory(path);
-                }
-                if (YoutubeClient.TryParseVideoId(url, out string videoId))
-                {
-                    YoutubeClient client = new YoutubeClient();
-                    Video video = await client.GetVideoAsync(videoId).ConfigureAwait(false);
-
-                    if (File.Exists($"{path}\\{video.Title}.m4a") || video == null)
-                    {
-                        return;
-                    }
-
-                    MediaStreamInfoSet streamInfoSet = await client.GetVideoMediaStreamInfosAsync(videoId).ConfigureAwait(false);
-                    MediaStreamInfo streamInfo = streamInfoSet?.Audio.Where(a => a.Container == Container.M4A).WithHighestBitrate();
-                    if (streamInfo != null)
-                    {
-                        await client.DownloadMediaStreamAsync(streamInfo, $"{path}\\{video.Title}.m4a").ConfigureAwait(false);
-                    }
-                    else
-                    {
-                        MessageBox.Show("I encountered an exception when downloading.", "Exception encoutered.", MessageBoxButton.OK, MessageBoxImage.Error);
-                        return;
-                    }
-                    MessageBox.Show("The file was downloaded successfully!", "Download successfull!", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+                    MessageBox.Show("The file has been downloaded successfully!", "Download successfull!", MessageBoxButton.OK, MessageBoxImage.Exclamation);
                 }
                 else
                 {
-                    Logger.Warn($"[Wrong VideoId]VideoId: {url}");
-                    MessageBox.Show("The url you've used is wrong!", "Download unsuccessfull!", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+                    MessageBox.Show("I encountered an exception when downloading.", "Exception encoutered.", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
-            catch (Exception ex)
+            else
             {
-                Logger.Error(ex);
-                MessageBox.Show($"I encountered an exception when downloading. {ex}", "Exception encoutered.", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"The url you've used is wrong!\n{url}", "Download unsuccessfull!", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+            }
+        }
+
+        private async Task<bool> DownloadItemAsync(string path, Video video, YoutubeClient client)
+        {
+            if (File.Exists($"{path}\\{video.Title}.m4a"))
+            {
+                return true;
+            }
+            MediaStreamInfoSet streamInfoSet = await client.GetVideoMediaStreamInfosAsync(video.Id).ConfigureAwait(false);
+            MediaStreamInfo streamInfo = streamInfoSet?.Audio.Where(a => a.Container == Container.M4A).WithHighestBitrate();
+            if (streamInfo != null)
+            {
+                await client.DownloadMediaStreamAsync(streamInfo, $"{path}\\{video.Title}.m4a").ConfigureAwait(false);
+                return true;
+            }
+            else
+            {
+                return false;
             }
         }
 
         public async void DownloadPlaylistAsync(string url, string path)
         {
-            try
+            if (YoutubeClient.TryParsePlaylistId(url, out string playlistId))
             {
-                if (!Directory.Exists(path))
+                YoutubeClient client = new YoutubeClient();
+                Playlist playlist = await client.GetPlaylistAsync(playlistId).ConfigureAwait(false);
+                if (playlist != null)
                 {
-                    Directory.CreateDirectory(path);
-                }
-                if (YoutubeClient.TryParsePlaylistId(url, out string playlistId))
-                {
-                    YoutubeClient client = new YoutubeClient();
-                    Playlist playlist = await client.GetPlaylistAsync(playlistId).ConfigureAwait(false);
-
-                    foreach (Video video in playlist.Videos)
+                    bool[] tasks = new bool[playlist.Videos.Count];
+                    ParallelOptions options = new ParallelOptions { MaxDegreeOfParallelism = 4 };
+                    Parallel.ForEach(playlist.Videos, options, v => tasks.Append(DownloadItemAsync(path, v, client).Result));
+                    if (tasks.All(s => true))
                     {
-                        if (File.Exists($"{path}\\{video.Title}.m4a") || playlist == null)
-                        {
-                            return;
-                        }
-
-                        MediaStreamInfoSet streamInfoSet = await client.GetVideoMediaStreamInfosAsync(video.Id).ConfigureAwait(false);
-                        MediaStreamInfo streamInfo = streamInfoSet?.Audio.Where(a => a.Container == Container.M4A).WithHighestBitrate();
-                        if (streamInfo != null)
-                        {
-                            await client.DownloadMediaStreamAsync(streamInfo, $"{path}\\{video.Title}.m4a").ConfigureAwait(false);
-                            MessageBox.Show("The file was downloaded successfully!", "Download successfull!", MessageBoxButton.OK, MessageBoxImage.Exclamation);
-                        }
-                        else
-                        {
-                            MessageBox.Show("I encountered an exception when downloading.", "Exception encoutered.", MessageBoxButton.OK, MessageBoxImage.Error);
-                        }
+                        MessageBox.Show("Playlist download successful!", "Download successfull!", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+                    }
+                    else
+                    {
+                        MessageBox.Show("I encountered an exception when downloading one of the playlist titles.", "Exception encoutered.", MessageBoxButton.OK, MessageBoxImage.Error);
                     }
                 }
                 else
                 {
-                    Logger.Warn($"[Wrong VideoId]VideoId: {url}");
-                    MessageBox.Show("The url you've used is wrong!", "Download unsuccessfull!", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+                    MessageBox.Show("The playlist object was null.", "Exception encoutered.", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
-            catch (Exception ex)
+            else
             {
-                Logger.Error(ex);
-                MessageBox.Show($"I encountered an exception when downloading. {ex}", "Exception encoutered.", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"The url you've used is wrong!\n{url}", "Download unsuccessfull!", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 

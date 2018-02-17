@@ -1,7 +1,8 @@
 ﻿using log4net;
 using OffLoad.Core;
 using OffLoad.Core.Services;
-using System;
+using OffLoad.Core.Services.Interfaces;
+using System.IO;
 using System.Windows;
 using System.Windows.Forms;
 
@@ -27,28 +28,22 @@ namespace OffLoadClient
 
         private void Download(object sender, RoutedEventArgs e)
         {
-            using (new CursorWait())
+            IMusicDownloadService MDS = new MusicDownloadService();
+            string url = URLBox.Text;
+            string path = string.IsNullOrWhiteSpace(Path.Text) ? "music" : Path.Text;
+            if (!Directory.Exists(path))
             {
-                System.Windows.Forms.Application.UseWaitCursor = true;
-                MusicDownloadService MDS = new MusicDownloadService();
-                string url = VideoURL.Text;
-                string path = string.IsNullOrWhiteSpace(Path.Text) ? "music" : Path.Text;
-                if (url.Contains("www.youtube.com/playlist"))
-                {
-                    MDS.DownloadPlaylistAsync(url, path);
-                }
-                else if (url.Contains("www."))
-                {
-                    MDS.DownloadAsync(url, path);
-                }
-                else
-                {
-                    System.Windows.MessageBox.Show("You've input the wrong URL", "Download unsuccessfull!", MessageBoxButton.OK, MessageBoxImage.Exclamation);
-                }
+                Directory.CreateDirectory(path);
+            }
+            if (url.Contains("www.youtube.com/playlist"))
+            {
+                MDS.DownloadPlaylistAsync(url, path);
+            }
+            else
+            {
+                MDS.DownloadAsync(url, path);
             }
         }
-
-        #endregion
 
         private void PathButton_Click(object sender, RoutedEventArgs e)
         {
@@ -62,21 +57,6 @@ namespace OffLoadClient
             }
         }
 
-        public class CursorWait : IDisposable
-        {
-            public CursorWait(bool appStarting = false, bool applicationCursor = false)
-            {
-                // Wait
-                System.Windows.Forms.Cursor.Current = appStarting ? Cursors.AppStarting : Cursors.WaitCursor;
-                System.Windows.Forms.Application.UseWaitCursor |= applicationCursor;
-            }
-
-            public void Dispose()
-            {
-                // Reset
-                System.Windows.Forms.Cursor.Current = Cursors.Default;
-                System.Windows.Forms.Application.UseWaitCursor = false;
-            }
-        }
+        #endregion
     }
 }
