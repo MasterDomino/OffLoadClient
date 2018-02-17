@@ -1,5 +1,6 @@
 ﻿using OffLoad.Core.Services.Interfaces;
 using System;
+using System.Configuration;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -58,14 +59,15 @@ namespace OffLoad.Core.Services
 
         public async void DownloadPlaylistAsync(string url, string path)
         {
-            if (YoutubeClient.TryParsePlaylistId(url, out string playlistId))
+            if (YoutubeClient.TryParsePlaylistId(url, out string playlistId)
+                && int.TryParse(ConfigurationManager.AppSettings["MaxDownloadTasks"], out int maxDownloadTasks))
             {
                 YoutubeClient client = new YoutubeClient();
                 Playlist playlist = await client.GetPlaylistAsync(playlistId).ConfigureAwait(false);
                 if (playlist != null)
                 {
                     bool[] tasks = new bool[playlist.Videos.Count];
-                    ParallelOptions options = new ParallelOptions { MaxDegreeOfParallelism = 4 };
+                    ParallelOptions options = new ParallelOptions { MaxDegreeOfParallelism = maxDownloadTasks };
                     Parallel.ForEach(playlist.Videos, options, v => tasks.Append(DownloadItemAsync(path, v, client).Result));
                     if (tasks.All(s => true))
                     {
