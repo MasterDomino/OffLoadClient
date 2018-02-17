@@ -1,7 +1,7 @@
-﻿using log4net;
-using OffLoad.Core;
-using OffLoad.Core.Services;
+﻿using OffLoad.Core.Services;
 using OffLoad.Core.Services.Interfaces;
+using System;
+using System.Configuration;
 using System.IO;
 using System.Windows;
 using System.Windows.Forms;
@@ -13,12 +13,20 @@ namespace OffLoadClient
     /// </summary>
     public partial class MainWindow : Window
     {
+        #region Members
+
+        private readonly IMusicDownloadService _mds;
+
+        #endregion
+
         #region Instantiation
 
         public MainWindow()
         {
-            log4net.Config.XmlConfigurator.Configure();
-            Logger.InitializeLogger(LogManager.GetLogger(nameof(MainWindow)));
+            _mds = new MusicDownloadService()
+            {
+                MaxDownloadTasks = Convert.ToInt32(ConfigurationManager.AppSettings["MaxDownloadTasks"])
+            };
             InitializeComponent();
         }
 
@@ -28,20 +36,15 @@ namespace OffLoadClient
 
         private void Download(object sender, RoutedEventArgs e)
         {
-            IMusicDownloadService MDS = new MusicDownloadService();
             string url = URLBox.Text;
-            string path = string.IsNullOrWhiteSpace(Path.Text) ? "music" : Path.Text;
-            if (!Directory.Exists(path))
+            if (!string.IsNullOrWhiteSpace(url))
             {
-                Directory.CreateDirectory(path);
-            }
-            if (url.Contains("www.youtube.com/playlist"))
-            {
-                MDS.DownloadPlaylistAsync(url, path);
-            }
-            else
-            {
-                MDS.DownloadAsync(url, path);
+                string path = string.IsNullOrWhiteSpace(Path.Text) ? "music" : Path.Text;
+                if (!Directory.Exists(path))
+                {
+                    Directory.CreateDirectory(path);
+                }
+                _mds.DownloadAsync(url, path);
             }
         }
 

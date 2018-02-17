@@ -6,8 +6,6 @@
 
         void DownloadAsync(string url, string path);
 
-        void DownloadPlaylistAsync(string url, string path);
-
         #endregion
     }
 }
