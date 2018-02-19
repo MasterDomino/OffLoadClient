@@ -85,10 +85,7 @@ namespace OffLoad.Core.Services
                 await client.DownloadMediaStreamAsync(streamInfo, fullPath).ConfigureAwait(false);
                 return true;
             }
-            else
-            {
-                return false;
-            }
+            return false;
         }
 
         #endregion

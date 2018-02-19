@@ -36,15 +36,14 @@ namespace OffLoadClient
 
         private void Download(object sender, RoutedEventArgs e)
         {
-            string url = URLBox.Text;
-            if (!string.IsNullOrWhiteSpace(url))
+            if (!string.IsNullOrWhiteSpace(URLBox.Text))
             {
                 string path = string.IsNullOrWhiteSpace(Path.Text) ? "music" : Path.Text;
                 if (!Directory.Exists(path))
                 {
                     Directory.CreateDirectory(path);
                 }
-                _mds.DownloadAsync(url, path);
+                _mds.DownloadAsync(URLBox.Text, path);
             }
         }
 
