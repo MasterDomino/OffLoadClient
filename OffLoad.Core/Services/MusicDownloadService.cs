@@ -1,4 +1,5 @@
 ﻿using OffLoad.Core.Services.Interfaces;
+using System;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -24,7 +25,15 @@ namespace OffLoad.Core.Services
             if (YoutubeClient.TryParseVideoId(url, out string videoId))
             {
                 YoutubeClient client = new YoutubeClient();
-                Video video = await client.GetVideoAsync(videoId).ConfigureAwait(false);
+                Video video = null;
+                try
+                {
+                    video = await client.GetVideoAsync(videoId).ConfigureAwait(false);
+                }
+                catch
+                {
+                    // do nothing
+                }
                 if (video != null)
                 {
                     bool task = await DownloadItemAsync(path, video, client).ConfigureAwait(false);
@@ -45,7 +54,15 @@ namespace OffLoad.Core.Services
             else if (YoutubeClient.TryParsePlaylistId(url, out string playlistId))
             {
                 YoutubeClient client = new YoutubeClient();
-                Playlist playlist = await client.GetPlaylistAsync(playlistId).ConfigureAwait(false);
+                Playlist playlist = null;
+                try
+                {
+                    playlist = await client.GetPlaylistAsync(playlistId).ConfigureAwait(false);
+                }
+                catch
+                {
+                    // do nothing
+                }
                 if (playlist != null)
                 {
                     bool[] tasks = new bool[playlist.Videos.Count];
