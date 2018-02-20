@@ -17,6 +17,8 @@ namespace OffLoad.Core.Services.Interfaces
 
         void Info(string message, [CallerMemberName]string caller = "");
 
+        void LogUndownloaded(string[] undownloads);
+
         void Warning(string message, Exception ex = null, [CallerMemberName]string caller = "");
 
         #endregion

@@ -1,5 +1,4 @@
-﻿using OffLoad.Core.Enums;
-using OffLoad.Core.Services.Interfaces;
+﻿using OffLoad.Core.Services.Interfaces;
 using System;
 using System.IO;
 using System.Runtime.CompilerServices;
@@ -10,9 +9,9 @@ namespace OffLoad.Core.Services
     {
         #region Members
 
-        public const string LogFilePath = "log.log";
+        public string FilePath = "log.log";
 
-        private readonly StreamWriter _stringWriter;
+        private readonly StreamWriter _stream;
 
         private bool _disposed;
 
@@ -20,13 +19,13 @@ namespace OffLoad.Core.Services
 
         #region Instantiation
 
-        public LoggingService() => _stringWriter = new StreamWriter(LogFilePath, true);
+        public LoggingService() => _stream = new StreamWriter(FilePath, true);
 
-        #endregion
-
-        #region Properties
-
-        public LoggingLevel LoggingLevel { get; set; }
+        public LoggingService(string filePath)
+        {
+            FilePath = filePath;
+            _stream = new StreamWriter(FilePath, true);
+        }
 
         #endregion
 
@@ -62,6 +61,17 @@ namespace OffLoad.Core.Services
 
         public void Info(string message, [CallerMemberName]string caller = "") => AppendToFile($"[{DateTime.Now}][Info][{caller}]: {message}");
 
+        public void LogUndownloaded(string[] undownloads)
+        {
+            if (undownloads.Length > 0)
+            {
+                for (int i = 0; i < undownloads.Length; i++)
+                {
+                    AppendToFile($"[Undownloaded][OffLoadClient]: {undownloads[i]}");
+                }
+            }
+        }
+
         public void Warning(string message, Exception ex = null, [CallerMemberName]string caller = "")
         {
             if (ex == null)
@@ -80,13 +90,18 @@ namespace OffLoad.Core.Services
             {
                 if (disposing)
                 {
-                    _stringWriter.Dispose();
+                    _stream.Close();
+                    _stream.Dispose();
                 }
                 _disposed = true;
             }
         }
 
-        private void AppendToFile(string message) => _stringWriter.WriteLine(message);
+        private void AppendToFile(string message)
+        {
+            _stream.WriteLine(message);
+            _stream.Flush();
+        }
 
         #endregion
     }

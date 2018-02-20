@@ -1,4 +1,5 @@
 ﻿using OffLoad.Core.Services.Interfaces;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -11,6 +12,12 @@ namespace OffLoad.Core.Services
 {
     public class MusicDownloadService : IMusicDownloadService
     {
+        #region Members
+
+        private readonly List<string> _undownloaded = new List<string>();
+
+        #endregion
+
         #region Properties
 
         public int MaxDownloadTasks { get; set; }
@@ -21,6 +28,7 @@ namespace OffLoad.Core.Services
 
         public async void DownloadAsync(string url, string path)
         {
+            ILoggingService undownloaded = new LoggingService(path + "\\Undownloaded.list");
             if (YoutubeClient.TryParseVideoId(url, out string videoId))
             {
                 YoutubeClient client = new YoutubeClient();
@@ -31,7 +39,6 @@ namespace OffLoad.Core.Services
                 }
                 catch
                 {
-                    // do nothing
                 }
                 if (video != null)
                 {
@@ -60,7 +67,6 @@ namespace OffLoad.Core.Services
                 }
                 catch
                 {
-                    // do nothing
                 }
                 if (playlist != null)
                 {
@@ -70,6 +76,8 @@ namespace OffLoad.Core.Services
                     if (tasks.All(s => true))
                     {
                         MessageBox.Show("Playlist download successful!", "Download successfull!", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+                        undownloaded.LogUndownloaded(_undownloaded.ToArray());
+                        undownloaded.Dispose();
                     }
                     else
                     {
@@ -107,6 +115,8 @@ namespace OffLoad.Core.Services
             }
             catch //(Exception ex)
             {
+                _undownloaded.Add(video.Title + "|" + video.GetShortUrl());
+
                 // we dont log because we know that if this fails its false
                 //_loggingService.Error("Exception Caught", ex);
             }
