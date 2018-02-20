@@ -50,7 +50,7 @@ namespace OffLoad.Core.Services
                 {
                     bool[] tasks = new bool[playlist.Videos.Count];
                     ParallelOptions options = new ParallelOptions { MaxDegreeOfParallelism = MaxDownloadTasks };
-                    Parallel.ForEach(playlist.Videos, options, v => tasks.Append(DownloadItemAsync(path, v, client).Result));
+                    Parallel.For(0, playlist.Videos.Count, options, v => tasks[v] = DownloadItemAsync(path, playlist.Videos[v], client).Result);
                     if (tasks.All(s => true))
                     {
                         MessageBox.Show("Playlist download successful!", "Download successfull!", MessageBoxButton.OK, MessageBoxImage.Exclamation);
