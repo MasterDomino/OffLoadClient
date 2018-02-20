@@ -1,5 +1,4 @@
 ﻿using OffLoad.Core.Services.Interfaces;
-using System;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -95,12 +94,21 @@ namespace OffLoad.Core.Services
             {
                 return true;
             }
-            MediaStreamInfoSet streamInfoSet = await client.GetVideoMediaStreamInfosAsync(video.Id).ConfigureAwait(false);
-            MediaStreamInfo streamInfo = streamInfoSet?.Audio.Where(a => a.Container == Container.M4A).WithHighestBitrate();
-            if (streamInfo != null)
+            try
             {
-                await client.DownloadMediaStreamAsync(streamInfo, fullPath).ConfigureAwait(false);
-                return true;
+                MediaStreamInfoSet streamInfoSet = await client.GetVideoMediaStreamInfosAsync(video.Id).ConfigureAwait(false);
+                MediaStreamInfo streamInfo = streamInfoSet?.Audio.Where(a => a.Container == Container.M4A).WithHighestBitrate();
+
+                if (streamInfo != null)
+                {
+                    await client.DownloadMediaStreamAsync(streamInfo, fullPath).ConfigureAwait(false);
+                    return true;
+                }
+            }
+            catch //(Exception ex)
+            {
+                // we dont log because we know that if this fails its false
+                //_loggingService.Error("Exception Caught", ex);
             }
             return false;
         }
