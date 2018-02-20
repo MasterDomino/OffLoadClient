@@ -115,7 +115,7 @@ namespace OffLoad.Core.Services
             }
             catch //(Exception ex)
             {
-                _undownloaded.Add(video.Title + "|" + video.GetShortUrl());
+                _undownloaded.Add(video.Title + " | " + video.GetShortUrl());
 
                 // we dont log because we know that if this fails its false
                 //_loggingService.Error("Exception Caught", ex);
