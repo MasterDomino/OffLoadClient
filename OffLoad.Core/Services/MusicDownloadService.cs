@@ -1,7 +1,9 @@
 ﻿using OffLoad.Core.Services.Interfaces;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
 using YoutubeExplode;
@@ -16,6 +18,8 @@ namespace OffLoad.Core.Services
 
         private readonly List<string> _undownloaded = new List<string>();
 
+        private static readonly Regex _regex = new Regex("[" + Regex.Escape(new string(Path.GetInvalidFileNameChars())) + "]");
+
         #endregion
 
         #region Properties
@@ -28,7 +32,6 @@ namespace OffLoad.Core.Services
 
         public async void DownloadAsync(string url, string path)
         {
-            ILoggingService undownloaded = new LoggingService(path + "\\Undownloaded.list");
             if (YoutubeClient.TryParseVideoId(url, out string videoId))
             {
                 YoutubeClient client = new YoutubeClient();
@@ -73,15 +76,16 @@ namespace OffLoad.Core.Services
                     bool[] tasks = new bool[playlist.Videos.Count];
                     ParallelOptions options = new ParallelOptions { MaxDegreeOfParallelism = MaxDownloadTasks };
                     Parallel.For(0, playlist.Videos.Count, options, v => tasks[v] = DownloadItemAsync(path, playlist.Videos[v], client).Result);
-                    if (tasks.All(s => true))
+                    if (tasks.All(s => s))
                     {
                         MessageBox.Show("Playlist download successful!", "Download successfull!", MessageBoxButton.OK, MessageBoxImage.Exclamation);
-                        undownloaded.LogUndownloaded(_undownloaded.ToArray());
-                        undownloaded.Dispose();
                     }
                     else
                     {
                         MessageBox.Show("I encountered an exception when downloading one of the playlist titles.", "Exception encoutered.", MessageBoxButton.OK, MessageBoxImage.Error);
+                        ILoggingService undownloaded = new LoggingService(path + "\\Undownloaded.list");
+                        undownloaded.LogUndownloaded(_undownloaded.ToArray());
+                        undownloaded.Dispose();
                     }
                 }
                 else
@@ -95,9 +99,12 @@ namespace OffLoad.Core.Services
             }
         }
 
+        private static string RemoveIllegalCharacters(string input) => _regex.Replace(input, "");
+
         private async Task<bool> DownloadItemAsync(string path, Video video, YoutubeClient client)
         {
-            string fullPath = $"{path}\\{video.Title}.m4a";
+            string title = RemoveIllegalCharacters(video.Title);
+            string fullPath = $"{path}\\{video.Title.Replace("/", "").Replace("\\", "")}.m4a";
             if (File.Exists(fullPath))
             {
                 return true;
@@ -113,12 +120,10 @@ namespace OffLoad.Core.Services
                     return true;
                 }
             }
-            catch //(Exception ex)
+            catch (Exception ex)
             {
-                _undownloaded.Add(video.Title + " | " + video.GetShortUrl());
-
-                // we dont log because we know that if this fails its false
-                //_loggingService.Error("Exception Caught", ex);
+                _undownloaded.Add(video.Title + " | " + video.GetShortUrl() + "| Reason: " + ex.Message);
+                return false;
             }
             return false;
         }
