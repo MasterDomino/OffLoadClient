@@ -3,7 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
 using YoutubeExplode;
@@ -17,8 +16,6 @@ namespace OffLoad.Core.Services
         #region Members
 
         private readonly List<string> _undownloaded = new List<string>();
-
-        private static readonly Regex _regex = new Regex("[" + Regex.Escape(new string(Path.GetInvalidFileNameChars())) + "]");
 
         #endregion
 
@@ -52,7 +49,7 @@ namespace OffLoad.Core.Services
                     }
                     else
                     {
-                        MessageBox.Show("I encountered an exception when downloading.", "Exception encoutered.", MessageBoxButton.OK, MessageBoxImage.Error);
+                        MessageBox.Show("I encountered an exception when downloading.\n" + _undownloaded.Aggregate((a, b) => a + "\n" + b), "Exception encoutered.", MessageBoxButton.OK, MessageBoxImage.Error);
                     }
                 }
                 else
@@ -99,12 +96,11 @@ namespace OffLoad.Core.Services
             }
         }
 
-        private static string RemoveIllegalCharacters(string input) => _regex.Replace(input, "");
+        private static string RemoveIllegalCharacters(string input) => string.Concat(input.Split(Path.GetInvalidFileNameChars()));
 
         private async Task<bool> DownloadItemAsync(string path, Video video, YoutubeClient client)
         {
-            string title = RemoveIllegalCharacters(video.Title);
-            string fullPath = $"{path}\\{video.Title.Replace("/", "").Replace("\\", "")}.m4a";
+            string fullPath = $"{path}\\{RemoveIllegalCharacters(video.Title)}.m4a";
             if (File.Exists(fullPath))
             {
                 return true;
@@ -113,7 +109,6 @@ namespace OffLoad.Core.Services
             {
                 MediaStreamInfoSet streamInfoSet = await client.GetVideoMediaStreamInfosAsync(video.Id).ConfigureAwait(false);
                 MediaStreamInfo streamInfo = streamInfoSet?.Audio.Where(a => a.Container == Container.M4A).WithHighestBitrate();
-
                 if (streamInfo != null)
                 {
                     await client.DownloadMediaStreamAsync(streamInfo, fullPath).ConfigureAwait(false);
@@ -122,7 +117,7 @@ namespace OffLoad.Core.Services
             }
             catch (Exception ex)
             {
-                _undownloaded.Add(video.Title + " | " + video.GetShortUrl() + "| Reason: " + ex.Message);
+                _undownloaded.Add(video.Title + " | " + video.GetShortUrl() + " | Reason: " + ex.Message);
                 return false;
             }
             return false;
