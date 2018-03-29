@@ -1,5 +1,4 @@
 ﻿using OffLoad.Core.Services;
-using OffLoad.Core.Services.Interfaces;
 using System;
 using System.Configuration;
 using System.IO;
@@ -15,7 +14,7 @@ namespace OffLoadClient
     {
         #region Members
 
-        private readonly IMusicDownloadService _mds;
+        private readonly MusicDownloadService _mds;
 
         #endregion
 

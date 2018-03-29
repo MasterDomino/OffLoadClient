@@ -11,7 +11,7 @@ using YoutubeExplode.Models.MediaStreams;
 
 namespace OffLoad.Core.Services
 {
-    public class MusicDownloadService : IMusicDownloadService
+    public class MusicDownloadService
     {
         #region Members
 
