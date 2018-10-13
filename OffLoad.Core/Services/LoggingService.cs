@@ -1,7 +1,6 @@
 ﻿using OffLoad.Core.Services.Interfaces;
 using System;
 using System.IO;
-using System.Runtime.CompilerServices;
 
 namespace OffLoad.Core.Services
 {
@@ -31,35 +30,7 @@ namespace OffLoad.Core.Services
 
         #region Methods
 
-        public void Debug(string message, [CallerMemberName]string caller = "") => AppendToFile($"[{DateTime.Now}][Debug][{caller}]: {message}");
-
         public void Dispose() => Dispose(true);
-
-        public void Error(string message, Exception ex = null, [CallerMemberName]string caller = "")
-        {
-            if (ex == null)
-            {
-                AppendToFile($"[{DateTime.Now}][Error][{caller}]: {message}");
-            }
-            else
-            {
-                AppendToFile($"[{DateTime.Now}][Error][{caller}]: {message} {ex.Message} {ex.InnerException}\r\n{ex.StackTrace}");
-            }
-        }
-
-        public void Fatal(string message, Exception ex = null, [CallerMemberName]string caller = "")
-        {
-            if (ex == null)
-            {
-                AppendToFile($"[{DateTime.Now}][Fatal][{caller}]: {message}");
-            }
-            else
-            {
-                AppendToFile($"[{DateTime.Now}][Fatal][{caller}]: {message} {ex.Message} {ex.InnerException}\r\n{ex.StackTrace}");
-            }
-        }
-
-        public void Info(string message, [CallerMemberName]string caller = "") => AppendToFile($"[{DateTime.Now}][Info][{caller}]: {message}");
 
         public void LogUndownloaded(string[] undownloads)
         {
@@ -67,20 +38,8 @@ namespace OffLoad.Core.Services
             {
                 for (int i = 0; i < undownloads.Length; i++)
                 {
-                    AppendToFile($"[Undownloaded][OffLoadClient]: {undownloads[i]}");
+                    AppendToFile("[Undownloaded][OffLoadClient]: " + undownloads[i]);
                 }
-            }
-        }
-
-        public void Warning(string message, Exception ex = null, [CallerMemberName]string caller = "")
-        {
-            if (ex == null)
-            {
-                AppendToFile($"[{DateTime.Now}][Warning][{caller}]: {message}");
-            }
-            else
-            {
-                AppendToFile($"[{DateTime.Now}][Warning][{caller}]: {message} {ex.Message} {ex.InnerException}\r\n{ex.StackTrace}");
             }
         }
 

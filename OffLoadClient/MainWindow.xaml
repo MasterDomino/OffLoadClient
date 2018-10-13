@@ -11,5 +11,6 @@
         <Button Content="Download" Margin="432,0,10,10" Click="Download" Height="20" VerticalAlignment="Bottom" />
         <TextBox x:Name="Path" Margin="10,0,39,35" TextWrapping="NoWrap" Height="23" VerticalAlignment="Bottom" />
         <Button Name="PathButton" Content="..." HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Margin="0,0,10,35" Height="23" VerticalAlignment="Bottom" HorizontalAlignment="Right" Width="24" Click="PathButton_Click" RenderTransformOrigin="0.625,0.913" />
+        <ProgressBar Name="DownloadProgress" Height="20" Margin="10,0,0,10" VerticalAlignment="Bottom" HorizontalAlignment="Left" Width="417"/>
     </Grid>
 </Window>

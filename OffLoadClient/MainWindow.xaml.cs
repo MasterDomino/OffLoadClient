@@ -2,14 +2,13 @@
 using System;
 using System.Configuration;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Forms;
+using System.Windows.Media;
 
 namespace OffLoadClient
 {
-    /// <summary>
-    /// Interaction logic for MainWindow.xaml
-    /// </summary>
     public partial class MainWindow : Window
     {
         #region Members
@@ -26,7 +25,10 @@ namespace OffLoadClient
             {
                 MaxDownloadTasks = Convert.ToInt32(ConfigurationManager.AppSettings["MaxDownloadTasks"])
             };
+            _mds.DownloadProgressUpdate += OnDownloadProgressUpdate;
             InitializeComponent();
+            DownloadProgress.Maximum = 10000;
+            DownloadProgress.Value = 0;
         }
 
         #endregion
@@ -46,6 +48,19 @@ namespace OffLoadClient
             }
         }
 
+        private void OnDownloadProgressUpdate(object sender, DownloadUpdateEventArgs e)
+        {
+            if (e.Progress < 10000)
+            {
+                DownloadProgress.Value = e.Progress;
+            }
+            else if (e.Progress == 696969)
+            {
+                DownloadProgress.Foreground = Brushes.Red;
+                DownloadProgress.Value = 10000;
+            }
+        }
+
         private void PathButton_Click(object sender, RoutedEventArgs e)
         {
             using (FolderBrowserDialog fbd = new FolderBrowserDialog())
@@ -59,5 +74,13 @@ namespace OffLoadClient
         }
 
         #endregion
+    }
+
+    public static class ModifyProgressBarColor
+    {
+        [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = false)]
+        public static extern IntPtr SendMessage(IntPtr hWnd, uint msg, IntPtr w, IntPtr l);
+
+        public static void SetState(this ProgressBar pBar, int state) => SendMessage(pBar.Handle, 1040, (IntPtr)state, IntPtr.Zero);
     }
 }

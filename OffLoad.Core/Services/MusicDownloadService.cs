@@ -15,6 +15,8 @@ namespace OffLoad.Core.Services
     {
         #region Members
 
+        public event EventHandler<DownloadUpdateEventArgs> DownloadProgressUpdate;
+
         private readonly List<string> _undownloaded = new List<string>();
 
         #endregion
@@ -46,10 +48,12 @@ namespace OffLoad.Core.Services
                     if (task)
                     {
                         MessageBox.Show("File download successfull!", "Download successfull!", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+                        DownloadProgressUpdate?.Invoke(this, new DownloadUpdateEventArgs(10000));
                     }
                     else
                     {
-                        MessageBox.Show("I encountered an exception when downloading.\n" + _undownloaded.Aggregate((a, b) => a + "\n" + b), "Exception encoutered.", MessageBoxButton.OK, MessageBoxImage.Error);
+                        MessageBox.Show("I encountered an exception when downloading.\n" + _undownloaded[0] + "\n", "Exception encoutered.", MessageBoxButton.OK, MessageBoxImage.Error);
+                        DownloadProgressUpdate?.Invoke(this, new DownloadUpdateEventArgs(696969));
                     }
                 }
                 else
@@ -72,10 +76,11 @@ namespace OffLoad.Core.Services
                 {
                     bool[] tasks = new bool[playlist.Videos.Count];
                     ParallelOptions options = new ParallelOptions { MaxDegreeOfParallelism = MaxDownloadTasks };
-                    Parallel.For(0, playlist.Videos.Count, options, v => tasks[v] = DownloadItemAsync(path, playlist.Videos[v], client).Result);
+                    Parallel.For(0, playlist.Videos.Count, options, async v => tasks[v] = await DownloadItemAsync(path, playlist.Videos[v], client).ConfigureAwait(false));
                     if (tasks.All(s => s))
                     {
                         MessageBox.Show("Playlist download successful!", "Download successfull!", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+                        DownloadProgressUpdate?.Invoke(this, new DownloadUpdateEventArgs(10000));
                     }
                     else
                     {
@@ -83,6 +88,7 @@ namespace OffLoad.Core.Services
                         ILoggingService undownloaded = new LoggingService(path + "\\Undownloaded.list");
                         undownloaded.LogUndownloaded(_undownloaded.ToArray());
                         undownloaded.Dispose();
+                        DownloadProgressUpdate?.Invoke(this, new DownloadUpdateEventArgs(696969));
                     }
                 }
                 else
@@ -92,7 +98,7 @@ namespace OffLoad.Core.Services
             }
             else
             {
-                MessageBox.Show($"The url you've used is wrong!\n{url}", "Download unsuccessfull!", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show("The url you've used is wrong!\n" + url, "Download unsuccessfull!", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -100,7 +106,7 @@ namespace OffLoad.Core.Services
 
         private async Task<bool> DownloadItemAsync(string path, Video video, YoutubeClient client)
         {
-            string fullPath = $"{path}\\{RemoveIllegalCharacters(video.Title)}.m4a";
+            string fullPath = path + "\\" + RemoveIllegalCharacters(video.Title) + ".m4a";
             if (File.Exists(fullPath))
             {
                 return true;
