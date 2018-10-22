@@ -49,7 +49,7 @@ namespace OffLoadClient
 
         private void OnDownloadProgressUpdate(object sender, DownloadUpdateEventArgs e)
         {
-            if (e.Progress < 10000)
+            if (e.Progress <= 10000)
             {
                 DownloadProgress.Value = e.Progress;
             }
