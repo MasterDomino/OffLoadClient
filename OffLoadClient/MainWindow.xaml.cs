@@ -5,6 +5,7 @@ using System.IO;
 using System.Windows;
 using System.Windows.Forms;
 using System.Windows.Media;
+using System.Windows.Threading;
 
 namespace OffLoadClient
 {
@@ -51,12 +52,14 @@ namespace OffLoadClient
         {
             if (e.Progress <= 10000)
             {
-                DownloadProgress.Value = e.Progress;
+                Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() => DownloadProgress.Value = e.Progress));
             }
             else if (e.Progress == 696969)
             {
-                DownloadProgress.Foreground = Brushes.Red;
-                DownloadProgress.Value = 10000;
+                Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() => {
+                    DownloadProgress.Foreground = Brushes.Red;
+                    DownloadProgress.Value = 10000;
+                }));
             }
         }
 

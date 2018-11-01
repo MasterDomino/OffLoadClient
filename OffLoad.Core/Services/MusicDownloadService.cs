@@ -47,13 +47,13 @@ namespace OffLoad.Core.Services
                     bool task = await DownloadItemAsync(path, video, client).ConfigureAwait(false);
                     if (task)
                     {
-                        MessageBox.Show("File download successfull!", "Download successfull!", MessageBoxButton.OK, MessageBoxImage.Exclamation);
                         DownloadProgressUpdate?.Invoke(this, new DownloadUpdateEventArgs(10000));
+                        MessageBox.Show("File download successfull!", "Download successfull!", MessageBoxButton.OK, MessageBoxImage.Exclamation);
                     }
                     else
                     {
-                        MessageBox.Show("I encountered an exception when downloading.\n" + _undownloaded[0] + "\n", "Exception encoutered.", MessageBoxButton.OK, MessageBoxImage.Error);
                         DownloadProgressUpdate?.Invoke(this, new DownloadUpdateEventArgs(696969));
+                        MessageBox.Show("I encountered an exception when downloading.\n" + _undownloaded[0] + "\n", "Exception encoutered.", MessageBoxButton.OK, MessageBoxImage.Error);
                     }
                 }
                 else
@@ -79,16 +79,16 @@ namespace OffLoad.Core.Services
                     Parallel.For(0, playlist.Videos.Count, options, async v => tasks[v] = await DownloadItemAsync(path, playlist.Videos[v], client).ConfigureAwait(false));
                     if (tasks.All(s => s))
                     {
-                        MessageBox.Show("Playlist download successful!", "Download successfull!", MessageBoxButton.OK, MessageBoxImage.Exclamation);
                         DownloadProgressUpdate?.Invoke(this, new DownloadUpdateEventArgs(10000));
+                        MessageBox.Show("Playlist download successful!", "Download successfull!", MessageBoxButton.OK, MessageBoxImage.Exclamation);
                     }
                     else
                     {
+                        DownloadProgressUpdate?.Invoke(this, new DownloadUpdateEventArgs(696969));
                         MessageBox.Show("I encountered an exception when downloading one of the playlist titles.", "Exception encoutered.", MessageBoxButton.OK, MessageBoxImage.Error);
                         ILoggingService undownloaded = new LoggingService(path + "\\Undownloaded.list");
                         undownloaded.LogUndownloaded(_undownloaded.ToArray());
                         undownloaded.Dispose();
-                        DownloadProgressUpdate?.Invoke(this, new DownloadUpdateEventArgs(696969));
                     }
                 }
                 else
