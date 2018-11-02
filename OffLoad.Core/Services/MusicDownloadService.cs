@@ -39,8 +39,9 @@ namespace OffLoad.Core.Services
                 {
                     video = await client.GetVideoAsync(videoId).ConfigureAwait(false);
                 }
-                catch
+                catch (Exception ex)
                 {
+                    MessageBox.Show(ex.Message + Environment.NewLine + ex.StackTrace, "Exception encoutered.", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
                 if (video != null)
                 {
