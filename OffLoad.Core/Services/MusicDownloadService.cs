@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using YoutubeExplode;
+using YoutubeExplode.Converter;
 using YoutubeExplode.Models;
 using YoutubeExplode.Models.MediaStreams;
 
@@ -29,11 +30,12 @@ namespace OffLoad.Core.Services
 
         #region Methods
 
-        public async void DownloadAsync(string url, string path)
+        public async void DownloadAsync(string url, string path, bool isVideo)
         {
             if (YoutubeClient.TryParseVideoId(url, out string videoId))
             {
                 YoutubeClient client = new YoutubeClient();
+                YoutubeConverter converter = new YoutubeConverter(client);
                 Video video = null;
                 try
                 {
@@ -45,7 +47,7 @@ namespace OffLoad.Core.Services
                 }
                 if (video != null)
                 {
-                    bool task = await DownloadItemAsync(path, video, client).ConfigureAwait(false);
+                    bool task = await DownloadItemAsync(path, video, client, converter, isVideo).ConfigureAwait(false);
                     if (task)
                     {
                         DownloadProgressUpdate?.Invoke(this, new DownloadUpdateEventArgs(10000));
@@ -65,6 +67,7 @@ namespace OffLoad.Core.Services
             else if (YoutubeClient.TryParsePlaylistId(url, out string playlistId))
             {
                 YoutubeClient client = new YoutubeClient();
+                YoutubeConverter converter = new YoutubeConverter(client);
                 Playlist playlist = null;
                 try
                 {
@@ -77,7 +80,7 @@ namespace OffLoad.Core.Services
                 {
                     bool[] tasks = new bool[playlist.Videos.Count];
                     ParallelOptions options = new ParallelOptions { MaxDegreeOfParallelism = MaxDownloadTasks };
-                    Parallel.For(0, playlist.Videos.Count, options, async v => tasks[v] = await DownloadItemAsync(path, playlist.Videos[v], client).ConfigureAwait(false));
+                    Parallel.For(0, playlist.Videos.Count, options, async v => tasks[v] = await DownloadItemAsync(path, playlist.Videos[v], client, converter, isVideo).ConfigureAwait(false));
                     if (tasks.All(s => s))
                     {
                         DownloadProgressUpdate?.Invoke(this, new DownloadUpdateEventArgs(10000));
@@ -105,9 +108,9 @@ namespace OffLoad.Core.Services
 
         private static string RemoveIllegalCharacters(string input) => string.Concat(input.Split(Path.GetInvalidFileNameChars()));
 
-        private async Task<bool> DownloadItemAsync(string path, Video video, YoutubeClient client)
+        private async Task<bool> DownloadItemAsync(string path, Video video, YoutubeClient client, YoutubeConverter converter, bool isVideo)
         {
-            string fullPath = path + "\\" + RemoveIllegalCharacters(video.Title) + ".m4a";
+            string fullPath = path + "/" + RemoveIllegalCharacters(video.Title) + (isVideo ? ".mp4" : ".m4a");
             if (File.Exists(fullPath))
             {
                 return true;
@@ -115,11 +118,25 @@ namespace OffLoad.Core.Services
             try
             {
                 MediaStreamInfoSet streamInfoSet = await client.GetVideoMediaStreamInfosAsync(video.Id).ConfigureAwait(false);
-                MediaStreamInfo streamInfo = streamInfoSet?.Audio.Where(a => a.Container == Container.M4A).WithHighestBitrate();
-                if (streamInfo != null)
+                if (isVideo)
                 {
-                    await client.DownloadMediaStreamAsync(streamInfo, fullPath).ConfigureAwait(false);
-                    return true;
+                    AudioStreamInfo audioStreamInfo = streamInfoSet?.Audio.Where(a => a.Container == Container.Mp4).WithHighestBitrate();
+                    VideoStreamInfo videoStreamInfo = streamInfoSet?.Video.Where(a => a.Container == Container.Mp4).WithHighestVideoQuality();
+                    if (audioStreamInfo != null && videoStreamInfo != null)
+                    {
+                        MediaStreamInfo[] mediaStreamInfos = new MediaStreamInfo[] { audioStreamInfo, videoStreamInfo };
+                        await converter.DownloadAndProcessMediaStreamsAsync(mediaStreamInfos, fullPath, "mp4");
+                        return true;
+                    }
+                }
+                else
+                {
+                    AudioStreamInfo streamInfo = streamInfoSet?.Audio.Where(a => a.Container == Container.Mp4).WithHighestBitrate();
+                    if (streamInfo != null)
+                    {
+                        await client.DownloadMediaStreamAsync(streamInfo, fullPath).ConfigureAwait(false);
+                        return true;
+                    }
                 }
             }
             catch (Exception ex)

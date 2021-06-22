@@ -37,14 +37,14 @@ namespace OffLoadClient
 
         private void Download(object sender, RoutedEventArgs e)
         {
-            if (!string.IsNullOrWhiteSpace(URLBox.Text))
+            if (!string.IsNullOrWhiteSpace(URLBox.Text) && IsVideo.IsChecked.HasValue)
             {
                 string path = string.IsNullOrWhiteSpace(Path.Text) ? "music" : Path.Text;
                 if (!Directory.Exists(path))
                 {
                     Directory.CreateDirectory(path);
                 }
-                _mds.DownloadAsync(URLBox.Text, path);
+                _mds.DownloadAsync(URLBox.Text, path, IsVideo.IsChecked.Value);
             }
         }
 
@@ -70,7 +70,7 @@ namespace OffLoadClient
                 DialogResult result = fbd.ShowDialog();
                 if (result == System.Windows.Forms.DialogResult.OK && !string.IsNullOrWhiteSpace(fbd.SelectedPath))
                 {
-                    Path.Text = fbd.SelectedPath;
+                    Path.Text = fbd.SelectedPath.Replace('\\','/');
                 }
             }
         }
